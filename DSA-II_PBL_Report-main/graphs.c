@@ -3,12 +3,16 @@
 #include <limits.h>
 #define V 5
 #define INF 99999
+/* bounds: adjacency-list graphs and Kruskal edge buffer stay small by design */
+#define MAXV 10
+#define MAXE 20
 
 struct Node { int dest; struct Node* next; };
 struct AdjList { struct Node* head; };
 
 struct Node* createNode(int d){
     struct Node* n = (struct Node*)malloc(sizeof(struct Node));
+    if (!n){ fprintf(stderr,"out of memory\n"); exit(1); }
     n->dest = d; n->next = NULL; return n;
 }
 void addEdge(struct AdjList adj[], int s, int t){
@@ -21,17 +25,17 @@ void dfsRec(struct AdjList adj[], int visited[], int s){
         if (!visited[c->dest]) dfsRec(adj, visited, c->dest);
 }
 void bfs(struct AdjList adj[], int s){
-    int visited[10] = {0}, q[10], f = 0, r = 0;
+    int visited[MAXV] = {0}, q[MAXV], f = 0, r = 0;
     visited[s] = 1; q[r++] = s;
     while (f < r){
         int u = q[f++]; printf("%d ", u);
         for (struct Node* c = adj[u].head; c; c = c->next)
-            if (!visited[c->dest]){ visited[c->dest] = 1; q[r++] = c->dest; }
+            if (!visited[c->dest]){ visited[c->dest] = 1; if (r < MAXV) q[r++] = c->dest; }
     }
 }
 /* connected components using DFS */
 int components(struct AdjList adj[], int n){
-    int visited[10] = {0}, count = 0;
+    int visited[MAXV] = {0}, count = 0;
     for (int i = 0; i < n; i++)
         if (!visited[i]){ dfsRec(adj, visited, i); count++; printf("| "); }
     return count;
@@ -47,8 +51,11 @@ int w[V][V] = {
 
 int find(int p[], int x){ return p[x]==x ? x : (p[x]=find(p,p[x])); }
 void kruskal(){
-    int eu[20], ev[20], ew[20], m = 0, p[V];
-    for (int i=0;i<V;i++) for (int j=i+1;j<V;j++) if (w[i][j]){ eu[m]=i; ev[m]=j; ew[m]=w[i][j]; m++; }
+    int eu[MAXE], ev[MAXE], ew[MAXE], m = 0, p[V];
+    for (int i=0;i<V;i++) for (int j=i+1;j<V;j++) if (w[i][j]){
+        if (m==MAXE){ printf("  edge buffer full, stopping\n"); break; }
+        eu[m]=i; ev[m]=j; ew[m]=w[i][j]; m++;
+    }
     for (int i=0;i<m;i++) for (int j=i+1;j<m;j++) if (ew[j]<ew[i]){
         int t; t=ew[i];ew[i]=ew[j];ew[j]=t; t=eu[i];eu[i]=eu[j];eu[j]=t; t=ev[i];ev[i]=ev[j];ev[j]=t; }
     for (int i=0;i<V;i++) p[i]=i;
@@ -116,7 +123,7 @@ int main(){
     struct AdjList g3[6];
     for (int i=0;i<6;i++) g3[i].head=NULL;
     addEdge(g3,0,1); addEdge(g3,0,2); addEdge(g3,1,3); addEdge(g3,1,4); addEdge(g3,2,5);
-    printf("Second graph, DFS from 0: "); int v3[10]={0}; dfsRec(g3, v3, 0); printf("\n");
+    printf("Second graph, DFS from 0: "); int v3[MAXV]={0}; dfsRec(g3, v3, 0); printf("\n");
     printf("Second graph, BFS from 0: "); bfs(g3, 0); printf("\n");
 
     struct AdjList g2[6];
