@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 #define N 8
-#define INF 9999
+/* large enough to exceed any real travel time, and small enough that
+   adding two of them cannot overflow int */
+#define INF 1000000000
 #define MAX(a,b) ((a)>(b)?(a):(b))
+/* upper bound on edges in a simple undirected N-vertex graph */
+#define MAX_EDGES (N*(N-1)/2)
+/* LCS tables are sized for route strings up to MAX_STR-1 characters */
+#define MAX_STR 20
 
 const char *name[N] = {"Central Station","Bus Depot","City Mall","Hospital",
                        "University","Airport","Industrial Area","Hill Colony"};
@@ -32,8 +38,11 @@ void bfs_hops(int s){
 }
 int find(int p[],int x){ return p[x]==x?x:(p[x]=find(p,p[x])); }
 void kruskal(){
-    int eu[40],ev[40],ew[40],m=0,p[N];
-    for (int i=0;i<N;i++) for (int j=i+1;j<N;j++) if(t[i][j]){eu[m]=i;ev[m]=j;ew[m]=t[i][j];m++;}
+    int eu[MAX_EDGES],ev[MAX_EDGES],ew[MAX_EDGES],m=0,p[N];
+    for (int i=0;i<N;i++) for (int j=i+1;j<N;j++) if(t[i][j]){
+        if (m==MAX_EDGES){ printf("  edge buffer full, stopping\n"); break; }
+        eu[m]=i;ev[m]=j;ew[m]=t[i][j];m++;
+    }
     for (int i=0;i<m;i++) for (int j=i+1;j<m;j++) if(ew[j]<ew[i]){
         int x; x=ew[i];ew[i]=ew[j];ew[j]=x; x=eu[i];eu[i]=eu[j];eu[j]=x; x=ev[i];ev[i]=ev[j];ev[j]=x; }
     for (int i=0;i<N;i++) p[i]=i;
@@ -68,11 +77,18 @@ void floyd(){
     int g[N][N];
     for (int i=0;i<N;i++) for (int j=0;j<N;j++) g[i][j]= i==j?0:(t[i][j]?t[i][j]:INF);
     for (int k=0;k<N;k++) for (int i=0;i<N;i++) for (int j=0;j<N;j++)
-        if (g[i][k]+g[k][j]<g[i][j]) g[i][j]=g[i][k]+g[k][j];
+        /* skip legs through unreachable pairs, else INF+INF overflows int */
+        if (g[i][k]<INF && g[k][j]<INF && g[i][k]+g[k][j]<g[i][j])
+            g[i][j]=g[i][k]+g[k][j];
+    printf("All-pairs travel time in minutes (Floyd-Warshall), 0 = same stop, * = unreachable:\n");
     printf("      ");
-    for (int j=0;j<7;j++) printf("%4d", j);
+    for (int j=0;j<N;j++) printf("%4d", j);
     printf("\n");
-    for (int i=0;i<7;i++){ printf("  %3d ", i); for (int j=0;j<7;j++) printf("%4d", g[i][j]); printf("\n"); }
+    for (int i=0;i<N;i++){
+        printf("  %3d ", i);
+        for (int j=0;j<N;j++) printf(g[i][j]>=INF ? "   *" : "%4d", g[i][j]>=INF ? 0 : g[i][j]);
+        printf("\n");
+    }
 }
 /* resource allocation: buses to routes */
 void buses(){
@@ -101,14 +117,17 @@ void routes_budget(){
     int w=B;
     for (int i=n;i>0;i--) if (c[i][w]!=c[i-1][w]){ printf("    %s\n", rn[i-1]); w-=cost[i-1]; }
 }
-void lcs(char *x,char *y){
-    int n=strlen(x), m=strlen(y), L[20][20];
+/* longest common subsequence between two stop sequences */
+void lcs(const char *x,const char *y){
+    int n=strlen(x), m=strlen(y);
+    if (n>=MAX_STR||m>=MAX_STR){ printf("  route strings must be shorter than %d stops\n", MAX_STR); return; }
+    int L[MAX_STR][MAX_STR];
     for (int i=0;i<=n;i++) for (int j=0;j<=m;j++){
         if (!i||!j) L[i][j]=0;
         else if (x[i-1]==y[j-1]) L[i][j]=1+L[i-1][j-1];
         else L[i][j]=MAX(L[i-1][j],L[i][j-1]);
     }
-    char o[20]; int k=L[n][m]; o[k]=0; int i=n,j=m;
+    char o[MAX_STR]; int k=L[n][m]; o[k]=0; int i=n,j=m;
     while(i>0&&j>0){
         if (x[i-1]==y[j-1]){o[--k]=x[i-1];i--;j--;}
         else if (L[i-1][j]>=L[i][j-1]) i--; else j--;
@@ -123,44 +142,9 @@ int main(){
     printf("Fewest stops from Central Station (BFS):\n"); bfs_hops(0);
     printf("Cheapest set of links that keeps the connected stops joined (Kruskal):\n"); kruskal();
     printf("Fastest travel time from Central Station (Dijkstra):\n"); dijkstra(0);
-    printf("All-pairs travel time in minutes (Floyd-Warshall), stops 0-6:\n"); floyd();
+    floyd();
     printf("Buses for 3 routes, 5 buses available (resource allocation DP):\n"); buses();
     printf("New routes within budget (0/1 knapsack):\n"); routes_budget();
     printf("Shared stops between two routes (LCS), stops as letters:\n"); lcs("CBMHUA","CMUHA");
     return 0;
 }
-
-
-
-
-DFS - stops that can reach each other:
-  group 1: Central Station > Bus Depot > City Mall > University >
-           Hospital > Industrial Area > Airport
-  group 2: Hill Colony          (2 separate groups of stops)
-BFS - fewest stops from Central Station:
-  Central Station 0, Bus Depot 1, City Mall 1, Hospital 1, University 2,
-  Airport 2, Industrial Area 2, Hill Colony not reachable
-Kruskal - cheapest links that keep the connected stops joined (minutes):
-  Hospital - University 3        Central Station - City Mall 4
-  Bus Depot - City Mall 5        Airport - Industrial Area 6
-  Central Station - Hospital 7   Hospital - Industrial Area 9
-  total link time = 34 min
-Dijkstra - fastest time from Central Station (path by stop number):
-  Bus Depot 6 min via 0-1        City Mall 4 min via 0-2
-  Hospital 7 min via 0-3         University 10 min via 0-3-4
-  Airport 19 min via 0-2-5       Industrial Area 16 min via 0-3-6
-  Hill Colony unreachable
-Floyd-Warshall - all-pairs travel time in minutes, stops 0-6:
-         0   1   2   3   4   5   6
-    0    0   6   4   7  10  19  16
-    1    6   0   5  13  13  20  22
-    2    4   5   0  11   8  15  20
-    3    7  13  11   0   3  15   9
-    4   10  13   8   3   0  12  12
-    5   19  20  15  15  12   0   6
-    6   16  22  20   9  12   6   0
-Resource allocation DP (3 routes, 5 buses): most passengers per hour = 940
-  Route 1: 3 buses, Route 2: 1 buses, Route 3: 1 buses
-0/1 knapsack (budget 9 lakh): best daily riders = 1750
-  routes: Hill Colony feeder, University loop, Central-Airport express
-LCS - route X: CBMHUA   route Y: CMUHA   common stops in order: CMHA (4)

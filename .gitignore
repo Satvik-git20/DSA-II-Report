@@ -1,0 +1,29 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+
+# Build output
+*.exe
+*.o
+*.obj
+*.out
+*.a
+*.dll
+
+# Compiled binaries
+*.so
+*.dylib
+
+# Local environments and editors
+.venv/
+venv/
+.env
+.vscode/
+.idea/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Generated performance output
+*.bench
