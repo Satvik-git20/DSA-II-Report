@@ -129,38 +129,3 @@ int main(){
     printf("Shared stops between two routes (LCS), stops as letters:\n"); lcs("CBMHUA","CMUHA");
     return 0;
 }
-
-
-
-
-DFS - stops that can reach each other:
-  group 1: Central Station > Bus Depot > City Mall > University >
-           Hospital > Industrial Area > Airport
-  group 2: Hill Colony          (2 separate groups of stops)
-BFS - fewest stops from Central Station:
-  Central Station 0, Bus Depot 1, City Mall 1, Hospital 1, University 2,
-  Airport 2, Industrial Area 2, Hill Colony not reachable
-Kruskal - cheapest links that keep the connected stops joined (minutes):
-  Hospital - University 3        Central Station - City Mall 4
-  Bus Depot - City Mall 5        Airport - Industrial Area 6
-  Central Station - Hospital 7   Hospital - Industrial Area 9
-  total link time = 34 min
-Dijkstra - fastest time from Central Station (path by stop number):
-  Bus Depot 6 min via 0-1        City Mall 4 min via 0-2
-  Hospital 7 min via 0-3         University 10 min via 0-3-4
-  Airport 19 min via 0-2-5       Industrial Area 16 min via 0-3-6
-  Hill Colony unreachable
-Floyd-Warshall - all-pairs travel time in minutes, stops 0-6:
-         0   1   2   3   4   5   6
-    0    0   6   4   7  10  19  16
-    1    6   0   5  13  13  20  22
-    2    4   5   0  11   8  15  20
-    3    7  13  11   0   3  15   9
-    4   10  13   8   3   0  12  12
-    5   19  20  15  15  12   0   6
-    6   16  22  20   9  12   6   0
-Resource allocation DP (3 routes, 5 buses): most passengers per hour = 940
-  Route 1: 3 buses, Route 2: 1 buses, Route 3: 1 buses
-0/1 knapsack (budget 9 lakh): best daily riders = 1750
-  routes: Hill Colony feeder, University loop, Central-Airport express
-LCS - route X: CBMHUA   route Y: CMUHA   common stops in order: CMHA (4)
