@@ -1,0 +1,9 @@
+source,destination,cost
+Central Station,City Mall,4
+Central Station,University,6
+City Mall,Bus Depot,5
+City Mall,Market,3
+University,Market,2
+University,Airport,9
+Bus Depot,Airport,7
+Market,Airport,6
